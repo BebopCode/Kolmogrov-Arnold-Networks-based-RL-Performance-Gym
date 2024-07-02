@@ -1,7 +1,53 @@
 import gym 
 from DQNAgent import *
+import matplotlib.pyplot as plt
+import random
 
-def train(agent, env, n_episodes=2000, eps_start=1.0, eps_end=0.01, eps_decay=0.995, target_update=10):
+def initialize_env_settings(env):
+    # Ensure the environment is reset to initialize its state
+    env.reset()
+
+    # Randomize the initial state
+    # These ranges are approximations and may need adjustment
+    env.lander.position = np.array([
+        np.random.uniform(-0.2, 0.2),  # x position
+        np.random.uniform(0.8, 1.2)    # y position
+    ])
+    env.lander.linearVelocity = np.array([
+        np.random.uniform(-0.1, 0.1),  # x velocity
+        np.random.uniform(-0.1, 0.1)   # y velocity
+    ])
+    env.lander.angle = np.random.uniform(-0.2, 0.2)  # angle
+    env.lander.angularVelocity = np.random.uniform(-0.1, 0.1)  # angular velocity
+
+    # Randomize leg positions
+    for i in range(2):
+        env.legs[i].ground_contact = False
+        env.legs[i].position = env.lander.position + np.array([0.2 * (-1 if i == 0 else 1), -0.2])
+
+
+def plot_scores(episode_durations,str):
+    plt.figure(figsize=(10, 5))
+    durations_t = torch.tensor(episode_durations, dtype=torch.float)
+    
+    plt.title('Training Result')
+    plt.xlabel('Episode')
+    plt.ylabel('Score')
+    plt.plot(durations_t.numpy(), label='Episode duration')
+    
+    # Take 100 episode averages and plot them too
+    if len(durations_t) >= 100:
+        means = durations_t.unfold(0, 100, 1).mean(1).view(-1)
+        means = torch.cat((torch.zeros(99), means))
+        plt.plot(means.numpy(), label='100-episode average')
+    
+    plt.legend()
+    plt.savefig(f'{str}.png')
+    plt.close()  # Close the figure to free up memory
+
+
+
+def train(agent, env, n_episodes=800, eps_start=1.0, eps_end=0.01, eps_decay=0.995, target_update=10):
     '''
     Train a DQN agent.
     
@@ -37,6 +83,7 @@ def train(agent, env, n_episodes=2000, eps_start=1.0, eps_end=0.01, eps_decay=0.
     for i_episode in range(1, n_episodes + 1):
         
         # Reset environment and score at the start of each episode
+        initialize_env_settings(env)
         state, _ = env.reset()
         score = 0 
 
@@ -74,11 +121,8 @@ def train(agent, env, n_episodes=2000, eps_start=1.0, eps_end=0.01, eps_decay=0.
         # Print average score every 100 episodes
         if i_episode % 100 == 0:
             print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_window)))
-        
-        # This environment is considered to be solved for a mean score of 200 or greater, so stop training.
-        if i_episode % 100 == 0 and np.mean(scores_window) >= 200:
-            break
             
+        
 
     return scores
 
@@ -88,12 +132,15 @@ env = gym.make('LunarLander-v2')
 state_size = env.observation_space.shape[0]
 action_size = env.action_space.n
 model = 'kan'
-hidden_size = 45
+hidden_size = 54
 agent = DQNAgent(state_size=state_size, action_size=action_size,hidden_size= hidden_size, model=model, learning_rate=1e-4)
 print(f'Model:{model}, hidden size: {hidden_size}')
 # Train it
+
 scores = train(agent, env)
+plot_scores(scores,f'dqn_agent_{model}_{hidden_size}')
 torch.save(agent.q_network.state_dict(), f'dqn_agent_{model}_{hidden_size}.pth')
+np.save(f'scores_{model}_{hidden_size}.npy', np.array(scores))
 print("Agent saved successfully.")
 '''
 # Initilize a DQN agent

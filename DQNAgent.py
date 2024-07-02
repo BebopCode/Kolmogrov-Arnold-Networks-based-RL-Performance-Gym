@@ -44,8 +44,8 @@ class DQNAgent:
             self.q_network = DQN(state_size, action_size, hidden_size).to(self.device)
             self.target_network = DQN(state_size, action_size, hidden_size).to(self.device)
         elif model == 'kan':
-            self.q_network = KAN([state_size, hidden_size, hidden_size, action_size]).to(self.device)
-            self.target_network = KAN([state_size, hidden_size, hidden_size, action_size]).to(self.device)
+            self.q_network = KAN([state_size, hidden_size, hidden_size, action_size], num_grids = 5 ).to(self.device)
+            self.target_network = KAN([state_size, hidden_size, hidden_size, action_size], num_grids = 5).to(self.device)
         
         # Set weights of target network to be the same as those of the q network
         self.target_network.load_state_dict(self.q_network.state_dict())
@@ -55,6 +55,7 @@ class DQNAgent:
 
         # Initialize the optimizer for updating the Q-Network's parameters
         self.optimizer = torch.optim.Adam(self.q_network.parameters(), lr=learning_rate)
+        #self.optimizer = torch.optim.AdamW(self.q_network.parameters(), lr=learning_rate, amsgrad=True)
         
         # Initialize the replay memory
         self.memory = ReplayBuffer(buffer_size)
