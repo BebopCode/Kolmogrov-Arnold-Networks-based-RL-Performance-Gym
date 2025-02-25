@@ -1,4 +1,4 @@
-# Deep Q-Network (DQN) Training for LunarLander-v2
+# Kolmogrov-Arnold-Networks-based-RL-Performance-Gym
 
 ## Overview
 
